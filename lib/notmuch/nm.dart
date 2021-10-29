@@ -72,11 +72,30 @@ class Database {
 class Message {
   late String threadId;
   final NativeLibrary _nativeNotmuch = libNotMuch();
+  late Pointer<notmuch_message_t> _nmMessage;
 
   Message(Pointer<notmuch_message_t> nmMessage) {
+    _nmMessage = nmMessage;
     Pointer<Int8> nthreadId =
         _nativeNotmuch.notmuch_message_get_thread_id(nmMessage);
     threadId = nthreadId.cast<Utf8>().toDartString();
+  }
+
+  List<String> get tags {
+    final ntags = _nativeNotmuch.notmuch_message_get_tags(_nmMessage);
+    //_nativeNotmuch.notmuch_tags_get(ntags);
+    List<String> list = List.generate(0, (index) => "");
+
+    while (_nativeNotmuch.notmuch_tags_valid(ntags) == TRUE) {
+      final tag = _nativeNotmuch.notmuch_tags_get(ntags);
+
+      if (tag != null) {
+        list.add(tag.cast<Utf8>().toDartString());
+      }
+      _nativeNotmuch.notmuch_tags_move_to_next(ntags);
+    }
+
+    return list;
   }
 }
 

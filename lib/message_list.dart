@@ -1,4 +1,5 @@
 import 'package:ava/notmuch/nm.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
@@ -9,7 +10,8 @@ class MessageList extends StatefulWidget {
 }
 
 class _MessageListState extends State<MessageList> {
-  final _biggerFont = const TextStyle(fontSize: 16.0);
+  _biggerFont({bool unread = false}) => TextStyle(
+      fontSize: 16.0, fontWeight: unread ? FontWeight.bold : FontWeight.normal);
 
   Widget _buildSuggestions() {
     final nm = Database();
@@ -24,22 +26,25 @@ class _MessageListState extends State<MessageList> {
           final msg = ml.elementAt(i);
           final tid = msg?.threadId;
           final thread = nm.queryThreads("thread:$tid").first;
+          final unread = msg!.tags.contains("unread");
 
           return Container(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-              color: const Color(0xFFededed),
+              color: unread ? const Color(0xFFededed) : const Color(0xffFFFFFF),
               child: Row(
                 children: [
                   SizedBox(
                     width: 400,
                     child: Container(
                       padding: const EdgeInsets.only(right: 20.0),
-                      child: Text('${thread?.authors}', style: _biggerFont),
+                      child: Text('${thread?.authors}',
+                          style: _biggerFont(unread: unread)),
                     ),
                   ),
                   Expanded(
                     //padding: const EdgeInsets.all(4.0),
-                    child: Text('${thread?.subject}', style: _biggerFont),
+                    child: Text('${thread?.subject}',
+                        style: _biggerFont(unread: unread)),
                   )
                 ],
               ));
