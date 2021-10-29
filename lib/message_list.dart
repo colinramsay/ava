@@ -14,7 +14,7 @@ class _MessageListState extends State<MessageList> {
   _biggerFont({bool unread = false}) => TextStyle(
       fontSize: 16.0, fontWeight: unread ? FontWeight.bold : FontWeight.normal);
 
-  Widget _buildSuggestions() {
+  Widget _buildList() {
     final nm = Database();
     final messages = nm.query("tag:inbox");
     final ml = messages.toList();
@@ -29,37 +29,39 @@ class _MessageListState extends State<MessageList> {
           final thread = nm.queryThreads("thread:$tid").first;
           final unread = msg!.tags.contains("unread");
 
-          return TextButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => ThreadView(thread: thread!)),
-                );
-              },
-              child: Container(
-                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-                  color: unread
-                      ? const Color(0xFFededed)
-                      : const Color(0xffFFFFFF),
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 400,
-                        child: Container(
-                          padding: const EdgeInsets.only(right: 20.0),
-                          child: Text('${thread?.authors}',
-                              style: _biggerFont(unread: unread)),
-                        ),
-                      ),
-                      Expanded(
-                        //padding: const EdgeInsets.all(4.0),
-                        child: Text('${thread?.subject}',
-                            style: _biggerFont(unread: unread)),
-                      )
-                    ],
-                  )));
+          return buildItem(context, thread, unread);
         });
+  }
+
+  TextButton buildItem(BuildContext context, Thread? thread, bool unread) {
+    return TextButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => ThreadView(thread: thread!)),
+          );
+        },
+        child: Container(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+            color: unread ? const Color(0xFFededed) : const Color(0xffFFFFFF),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 400,
+                  child: Container(
+                    padding: const EdgeInsets.only(right: 20.0),
+                    child: Text('${thread?.authors}',
+                        style: _biggerFont(unread: unread)),
+                  ),
+                ),
+                Expanded(
+                  //padding: const EdgeInsets.all(4.0),
+                  child: Text('${thread?.subject}',
+                      style: _biggerFont(unread: unread)),
+                )
+              ],
+            )));
   }
   // #enddocregion _buildSuggestions
 
@@ -67,7 +69,7 @@ class _MessageListState extends State<MessageList> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _buildSuggestions(),
+      body: _buildList(),
     );
   }
 }

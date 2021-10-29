@@ -1,6 +1,7 @@
 import 'dart:developer';
 import 'dart:io';
-
+import 'dart:convert';
+import 'package:enough_mail/enough_mail.dart';
 import 'package:ffi/ffi.dart';
 import './bindings.dart';
 
@@ -81,17 +82,34 @@ class Message {
     threadId = nthreadId.cast<Utf8>().toDartString();
   }
 
+  MimeMessage get parsedMessage {
+    final filename = _nativeNotmuch
+        .notmuch_message_get_filename(_nmMessage)
+        .cast<Utf8>()
+        .toDartString();
+
+    final file = File(filename);
+    final lines = file.readAsLinesSync();
+    return MimeMessage.parseFromText(lines.join('\r\n'));
+  }
+
+  String get asHtml {
+    return parsedMessage.decodeTextHtmlPart()!;
+  }
+
+  String get asText {
+    return parsedMessage.decodeTextPlainPart()!;
+  }
+
   List<String> get tags {
     final ntags = _nativeNotmuch.notmuch_message_get_tags(_nmMessage);
-    //_nativeNotmuch.notmuch_tags_get(ntags);
+
     List<String> list = List.generate(0, (index) => "");
 
     while (_nativeNotmuch.notmuch_tags_valid(ntags) == TRUE) {
       final tag = _nativeNotmuch.notmuch_tags_get(ntags);
 
-      if (tag != null) {
-        list.add(tag.cast<Utf8>().toDartString());
-      }
+      list.add(tag.cast<Utf8>().toDartString());
       _nativeNotmuch.notmuch_tags_move_to_next(ntags);
     }
 
@@ -115,6 +133,12 @@ class Thread {
   String get authors {
     final authors = _nativeNotmuch.notmuch_thread_get_authors(_nthread);
     return authors.cast<Utf8>().toDartString();
+  }
+
+  Messages get messages {
+    final nmessages = _nativeNotmuch.notmuch_thread_get_messages(_nthread);
+
+    return Messages(nmessages);
   }
 }
 

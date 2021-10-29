@@ -14,12 +14,19 @@ class ThreadView extends StatelessWidget {
         title: Text("Thread with ${thread.authors}"),
       ),
       body: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          child: const Text('Back to inbox'),
-        ),
+        child: ListView.builder(
+            itemCount: thread.messages.length,
+            itemBuilder: (context, i) {
+              final msg = thread.messages.elementAt(i);
+//.decodeTextPlainPart()!;
+
+              return Container(
+                  padding: const EdgeInsets.all(20),
+                  child: Text(
+                    msg!.asText,
+                    style: const TextStyle(fontSize: 16),
+                  ));
+            }),
       ),
     );
   }
