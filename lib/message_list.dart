@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:ava/notmuch/nm.dart';
 import 'package:ava/thread_view.dart';
 import 'package:flutter/cupertino.dart';
@@ -11,12 +13,17 @@ class MessageList extends StatefulWidget {
 }
 
 class _MessageListState extends State<MessageList> {
+  final nm = NotmuchDatabase();
+  late Threads messages;
+
+  _MessageListState() {
+    messages = Threads.query(nm.db, "tag:inbox");
+  }
+
   _biggerFont({bool unread = false}) => TextStyle(
       fontSize: 16.0, fontWeight: unread ? FontWeight.bold : FontWeight.normal);
 
   Widget _buildList() {
-    final nm = Database();
-    final messages = nm.query("tag:inbox");
     final ml = messages.toList();
     return ListView.separated(
         separatorBuilder: (BuildContext context, int index) =>
@@ -24,12 +31,12 @@ class _MessageListState extends State<MessageList> {
         padding: const EdgeInsets.all(16.0),
         itemCount: ml.length,
         itemBuilder: /*1*/ (context, i) {
-          final msg = ml.elementAt(i);
-          final tid = msg?.threadId;
-          final thread = nm.queryThreads("thread:$tid").first;
+          final msg = ml[i];
+          // final tid = msg?.threadId;
+          // final thread = Thread.queryById(nm.db, "thread:$tid");
           final unread = msg!.tags.contains("unread");
 
-          return buildItem(context, thread, unread);
+          return buildItem(context, msg, unread);
         });
   }
 
@@ -39,8 +46,20 @@ class _MessageListState extends State<MessageList> {
           Navigator.push(
             context,
             MaterialPageRoute(
-                builder: (context) => ThreadView(thread: thread!)),
-          );
+                builder: (context) => ThreadView(db: nm, thread: thread!)),
+          ).then((value) {
+            setState(() {
+              log("popped threadview");
+              messages.destroy();
+              log("destroyed");
+              nm.close();
+              nm.reopen();
+              log("closed and opened");
+              messages = Threads.query(nm.db, "tag:inbox");
+              log("refrreshed");
+            });
+            //messages = Threads.query(nm.db, "tag:inbox");
+          });
         },
         child: Container(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
@@ -63,12 +82,25 @@ class _MessageListState extends State<MessageList> {
               ],
             )));
   }
-  // #enddocregion _buildSuggestions
 
-  // #docregion RWS-build
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(title: const Text("Ava"), actions: [
+        IconButton(
+            icon: const Icon(Icons.refresh_sharp),
+            onPressed: () {
+              setState(() {
+                messages.destroy();
+                log("destroyed");
+                nm.close();
+                nm.reopen();
+                log("closed");
+                messages = Threads.query(nm.db, "tag:inbox");
+                log("queried");
+              });
+            })
+      ]),
       body: _buildList(),
     );
   }

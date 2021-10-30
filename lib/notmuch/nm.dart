@@ -13,12 +13,16 @@ NativeLibrary libNotMuch() {
   return NativeLibrary(dl);
 }
 
-class Database {
+final LibNotmuch = libNotMuch();
+
+class NotmuchDatabase {
+  Pointer<notmuch_database_t> get db => _database;
+
   late Pointer<notmuch_database_t> _database;
   bool _open = false;
   final NativeLibrary _nativeNotmuch = libNotMuch();
 
-  Database() {
+  NotmuchDatabase() {
     final dbPath = '/mnt/data/mail/.notmuch'.toNativeUtf8();
     final configPath =
         '/home/colinramsay/.config/notmuch/default/config'.toNativeUtf8();
@@ -28,7 +32,7 @@ class Database {
 
     _nativeNotmuch.notmuch_database_open_with_config(
         dbPath.cast<Int8>(),
-        notmuch_database_mode_t.NOTMUCH_DATABASE_MODE_READ_ONLY,
+        notmuch_database_mode_t.NOTMUCH_DATABASE_MODE_READ_WRITE,
         configPath.cast(),
         profile.cast(),
         dbOut,
@@ -38,40 +42,24 @@ class Database {
     _database = dbOut.value;
   }
 
-  Threads queryThreads(String querystring) {
-    final qs = querystring.toNativeUtf8();
-
-    var query = _nativeNotmuch.notmuch_query_create(_database, qs.cast());
-    Pointer<Pointer<notmuch_threads_t>> threads = calloc();
-
-    // _nativeNotmuch.notmuch_query_set_sort(
-    //     query, notmuch_sort_t.NOTMUCH_SORT_MESSAGE_ID);
-    final stat = _nativeNotmuch.notmuch_query_search_threads(query, threads);
-// stat == notmuch_status_t.NOTMUCH_STATUS_SUCCESS &&
-    // _nativeNotmuch.notmuch_query_destroy(query);
-
-    return Threads(threads.value);
+  void close() {
+    _nativeNotmuch.notmuch_database_close(db);
   }
 
-  Messages query(String querystring) {
-    final qs = querystring.toNativeUtf8();
+  void reopen() {
+    _nativeNotmuch.notmuch_database_reopen(
+        db, notmuch_database_mode_t.NOTMUCH_DATABASE_MODE_READ_WRITE);
+  }
 
-    Pointer<Pointer<notmuch_messages_t>> threads = calloc();
-
-    var query = _nativeNotmuch.notmuch_query_create(_database, qs.cast());
-    // _nativeNotmuch.notmuch_query_set_sort(
-    //     query, notmuch_sort_t.NOTMUCH_SORT_MESSAGE_ID);
-    final stat = _nativeNotmuch.notmuch_query_search_messages(query, threads);
-// stat == notmuch_status_t.NOTMUCH_STATUS_SUCCESS &&
-    final threadsValue = threads.value;
-    // _nativeNotmuch.notmuch_query_destroy(query);
-
-    return Messages(threadsValue);
+  void destroy() {
+    _nativeNotmuch.notmuch_database_destroy(db);
   }
 }
 
 class Message {
   late String threadId;
+  late String messageId;
+  late Pointer<Int8> nmessageId;
   final NativeLibrary _nativeNotmuch = libNotMuch();
   late Pointer<notmuch_message_t> _nmMessage;
 
@@ -79,7 +67,11 @@ class Message {
     _nmMessage = nmMessage;
     Pointer<Int8> nthreadId =
         _nativeNotmuch.notmuch_message_get_thread_id(nmMessage);
+
+    nmessageId = _nativeNotmuch.notmuch_message_get_message_id(nmMessage);
+
     threadId = nthreadId.cast<Utf8>().toDartString();
+    messageId = nmessageId.cast<Utf8>().toDartString();
   }
 
   MimeMessage get parsedMessage {
@@ -121,8 +113,71 @@ class Thread {
   late Pointer<notmuch_thread_t> _nthread;
   final NativeLibrary _nativeNotmuch = libNotMuch();
 
+  Pointer<notmuch_query_t>? _query;
+
   Thread(Pointer<notmuch_thread_t> nthread) {
     _nthread = nthread;
+  }
+
+  Thread.fromQuery(
+      Pointer<notmuch_query_t> query, Pointer<notmuch_thread_t> nthread) {
+    _nthread = nthread;
+    _query = query;
+  }
+
+  // static Thread queryById(
+  //     Pointer<notmuch_database_t> database, String threadId) {
+  //   Threads threads = Threads.query(database, threadId);
+
+  //   return Thread.fromQuery(threads._query, threads.first!._nthread);
+  // }
+
+  void destroy() {
+//    if (_query != null) {
+    LibNotmuch.notmuch_query_destroy(_query!);
+    //  }
+  }
+
+  markAsRead(NotmuchDatabase db) {
+    final messages = _nativeNotmuch.notmuch_thread_get_messages(_nthread);
+
+    while (_nativeNotmuch.notmuch_messages_valid(messages) == TRUE) {
+      final msg = _nativeNotmuch.notmuch_messages_get(messages);
+
+      final tag = "unread".toNativeUtf8().cast<Int8>();
+      // TODO remove only if exists
+      final removeTagResult =
+          _nativeNotmuch.notmuch_message_remove_tag(msg, tag);
+
+      log("Remove tag result $removeTagResult");
+
+      if (removeTagResult != notmuch_status_t.NOTMUCH_STATUS_SUCCESS) {
+        throw Exception("Tag could not be removed");
+      }
+
+      // final notmuch_message_tags_to_maildir_flagsResult =
+      //     _nativeNotmuch.notmuch_message_tags_to_maildir_flags(msg);
+
+      // log("notmuch_message_tags_to_maildir_flags result $notmuch_message_tags_to_maildir_flagsResult");
+
+      _nativeNotmuch.notmuch_messages_move_to_next(messages);
+    }
+  }
+
+  List<String> get tags {
+    final tags = _nativeNotmuch.notmuch_thread_get_tags(_nthread);
+
+    final tagsStr = List.generate(0, (index) => "");
+
+    while (_nativeNotmuch.notmuch_tags_valid(tags) == TRUE) {
+      final tag = _nativeNotmuch.notmuch_tags_get(tags);
+
+      tagsStr.add(tag.cast<Utf8>().toDartString());
+
+      _nativeNotmuch.notmuch_tags_move_to_next(tags);
+    }
+
+    return tagsStr;
   }
 
   String get subject {
@@ -138,19 +193,45 @@ class Thread {
   Messages get messages {
     final nmessages = _nativeNotmuch.notmuch_thread_get_messages(_nthread);
 
-    return Messages(nmessages);
+    return Messages.simple(nmessages);
   }
 }
 
 class Threads extends Iterable<Thread?> {
   late ThreadIterator _iterator;
+  late Pointer<notmuch_query_t> _query;
+  final NativeLibrary _nativeNotmuch = libNotMuch();
 
-  Threads(Pointer<notmuch_threads_t> nmThreads) {
+  Threads(
+      Pointer<notmuch_query_t> query, Pointer<notmuch_threads_t> nmThreads) {
     _iterator = ThreadIterator(nmThreads);
+    _query = query;
+  }
+
+  void destroy() {
+    _nativeNotmuch.notmuch_query_destroy(_query);
   }
 
   @override
   Iterator<Thread?> get iterator => _iterator;
+
+  static Threads query(
+      Pointer<notmuch_database_t> database, String querystring) {
+    final NativeLibrary _nativeNotmuch = libNotMuch();
+
+    final qs = querystring.toNativeUtf8();
+
+    var query = _nativeNotmuch.notmuch_query_create(database, qs.cast());
+    Pointer<Pointer<notmuch_threads_t>> threads = calloc();
+
+    // _nativeNotmuch.notmuch_query_set_sort(
+    //     query, notmuch_sort_t.NOTMUCH_SORT_MESSAGE_ID);
+    final stat = _nativeNotmuch.notmuch_query_search_threads(query, threads);
+// stat == notmuch_status_t.NOTMUCH_STATUS_SUCCESS &&
+    // _nativeNotmuch.notmuch_query_destroy(query);
+
+    return Threads(query, threads.value);
+  }
 }
 
 class ThreadIterator extends Iterator<Thread?> {
@@ -184,14 +265,48 @@ class ThreadIterator extends Iterator<Thread?> {
 }
 
 class Messages extends Iterable<Message?> {
-  late MessageIterator _iterator;
+  final NativeLibrary _nativeNotmuch = libNotMuch();
 
-  Messages(Pointer<notmuch_messages_t> nmMessages) {
+  late MessageIterator _iterator;
+  late Pointer<notmuch_query_t> _query;
+
+  Messages(
+      Pointer<notmuch_query_t> query, Pointer<notmuch_messages_t> nmMessages) {
+    _iterator = MessageIterator(nmMessages);
+    _query = query;
+  }
+
+  Messages.simple(Pointer<notmuch_messages_t> nmMessages) {
     _iterator = MessageIterator(nmMessages);
   }
 
   @override
   Iterator<Message?> get iterator => _iterator;
+
+  static Messages query(
+      Pointer<notmuch_database_t> database, String querystring) {
+    final NativeLibrary _nativeNotmuch = libNotMuch();
+
+    final qs = querystring.toNativeUtf8();
+
+    Pointer<Pointer<notmuch_messages_t>> messages = calloc();
+
+    var query = _nativeNotmuch.notmuch_query_create(database, qs.cast());
+    // _nativeNotmuch.notmuch_query_set_sort(
+    //     query, notmuch_sort_t.NOTMUCH_SORT_MESSAGE_ID);
+    final stat = _nativeNotmuch.notmuch_query_search_messages(query, messages);
+// stat == notmuch_status_t.NOTMUCH_STATUS_SUCCESS &&
+    final messagesValue = messages.value;
+    // _nativeNotmuch.notmuch_query_destroy(query);
+
+    log("MUST DESTROY");
+
+    return Messages(query, messagesValue);
+  }
+
+  void destroy() {
+    _nativeNotmuch.notmuch_query_destroy(_query);
+  }
 }
 
 class MessageIterator extends Iterator<Message?> {
