@@ -134,18 +134,26 @@ class Thread {
   // }
 
   void destroy() {
-//    if (_query != null) {
-    LibNotmuch.notmuch_query_destroy(_query!);
-    //  }
+    if (_query != null) {
+      LibNotmuch.notmuch_query_destroy(_query!);
+    }
+  }
+
+  archive(NotmuchDatabase db) {
+    removeTag(db, "inbox");
   }
 
   markAsRead(NotmuchDatabase db) {
+    removeTag(db, "unread");
+  }
+
+  removeTag(NotmuchDatabase db, String stag) {
     final messages = _nativeNotmuch.notmuch_thread_get_messages(_nthread);
 
     while (_nativeNotmuch.notmuch_messages_valid(messages) == TRUE) {
       final msg = _nativeNotmuch.notmuch_messages_get(messages);
 
-      final tag = "unread".toNativeUtf8().cast<Int8>();
+      final tag = stag.toNativeUtf8().cast<Int8>();
       // TODO remove only if exists
       final removeTagResult =
           _nativeNotmuch.notmuch_message_remove_tag(msg, tag);

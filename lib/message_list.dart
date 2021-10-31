@@ -38,6 +38,16 @@ class _MessageListState extends State<MessageList> {
   _biggerFont({bool unread = false}) => TextStyle(
       fontSize: 16.0, fontWeight: unread ? FontWeight.bold : FontWeight.normal);
 
+  void _refresh() {
+    _threads.destroy();
+    log("destroyed");
+    nm.close();
+    nm.reopen();
+    log("closed");
+    _threads = Threads.query(nm.db, "tag:inbox");
+    log("queried");
+  }
+
   Widget _buildList() {
     return ListView.separated(
         separatorBuilder: (BuildContext context, int index) =>
@@ -59,14 +69,7 @@ class _MessageListState extends State<MessageList> {
                 builder: (context) => ThreadView(db: nm, thread: thread)),
           ).then((value) {
             setState(() {
-              log("popped threadview");
-              _threads.destroy();
-              log("destroyed");
-              nm.close();
-              nm.reopen();
-              log("closed and opened");
-              _threads = Threads.query(nm.db, "tag:inbox");
-              log("refrreshed");
+              _refresh();
             });
             //messages = Threads.query(nm.db, "tag:inbox");
           });
@@ -82,13 +85,13 @@ class _MessageListState extends State<MessageList> {
                   width: 400,
                   child: Container(
                     padding: const EdgeInsets.only(right: 20.0),
-                    child: Text('${thread?.authors}',
+                    child: Text(thread.authors,
                         style: _biggerFont(unread: unread)),
                   ),
                 ),
                 Expanded(
                   //padding: const EdgeInsets.all(4.0),
-                  child: Text('$_selectedIndex ${thread?.subject}',
+                  child: Text('$_selectedIndex ${thread.subject}',
                       style: _biggerFont(unread: unread)),
                 )
               ],
@@ -107,10 +110,11 @@ class _MessageListState extends State<MessageList> {
             actions: <Type, Action<Intent>>{
               ArchiveIntent: CallbackAction<ArchiveIntent>(
                 onInvoke: (ArchiveIntent intent) => setState(() {
-                  // _selectedIndex = _selectedIndex + 1;
-
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: Text('Archived item at $_selectedIndex')));
+                  final thread = _threads[_selectedIndex];
+                  thread!.archive(nm);
+                  final scafMsg = ScaffoldMessenger.of(context);
+                  scafMsg.showSnackBar(
+                      SnackBar(content: Text('Archived ${thread.subject}')));
                 }),
               ),
               IncrementIntent: CallbackAction<IncrementIntent>(
@@ -130,13 +134,7 @@ class _MessageListState extends State<MessageList> {
                     icon: const Icon(Icons.refresh_sharp),
                     onPressed: () {
                       setState(() {
-                        _threads.destroy();
-                        log("destroyed");
-                        nm.close();
-                        nm.reopen();
-                        log("closed");
-                        _threads = Threads.query(nm.db, "tag:inbox");
-                        log("queried");
+                        _refresh();
                       });
                     })
               ]),
