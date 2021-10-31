@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:developer';
 import 'dart:io';
 import 'dart:convert';
@@ -197,15 +198,20 @@ class Thread {
   }
 }
 
-class Threads extends Iterable<Thread?> {
+class Threads extends ListBase<Thread?> {
   late ThreadIterator _iterator;
   late Pointer<notmuch_query_t> _query;
   final NativeLibrary _nativeNotmuch = libNotMuch();
+  final List<Thread?> _list = List.generate(0, (index) => null);
 
   Threads(
       Pointer<notmuch_query_t> query, Pointer<notmuch_threads_t> nmThreads) {
     _iterator = ThreadIterator(nmThreads);
     _query = query;
+
+    while (_iterator.moveNext()) {
+      _list.add(_iterator.current);
+    }
   }
 
   void destroy() {
@@ -231,6 +237,26 @@ class Threads extends Iterable<Thread?> {
     // _nativeNotmuch.notmuch_query_destroy(query);
 
     return Threads(query, threads.value);
+  }
+
+  @override
+  int get length {
+    return _list.length;
+  }
+
+  @override
+  Thread? operator [](int index) {
+    return _list[index];
+  }
+
+  @override
+  void operator []=(int index, Thread? value) {
+    _list[index] = value;
+  }
+
+  @override
+  set length(int newLength) {
+    // TODO: implement length
   }
 }
 
