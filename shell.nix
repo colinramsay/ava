@@ -3,7 +3,6 @@
 pkgs.mkShell {
   buildInputs = with pkgs; [
     notmuch
-    dart
     llvm
     llvmPackages.libclang
     gdb

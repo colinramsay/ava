@@ -1,16 +1,10 @@
-import 'dart:ffi';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-
 import 'notmuch/nm.dart';
-import 'notmuch/bindings.dart';
 
 class ThreadView extends StatelessWidget {
   final Thread thread;
-  final NotmuchDatabase db;
-  const ThreadView({Key? key, required this.thread, required this.db})
-      : super(key: key);
+  const ThreadView({Key? key, required this.thread}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +19,7 @@ class ThreadView extends StatelessWidget {
             IconButton(
                 icon: const Icon(Icons.archive_sharp),
                 onPressed: () {
-                  thread.markAsRead(db);
+                  thread.markAsRead();
                   Navigator.pop(context);
                 })
           ]),
@@ -34,7 +28,6 @@ class ThreadView extends StatelessWidget {
                 itemCount: thread.messages.length,
                 itemBuilder: (context, i) {
                   final msg = thread.messages.elementAt(i);
-//msg.decodeTextPlainPart()!;
 
                   return Container(
                       padding: const EdgeInsets.all(20),

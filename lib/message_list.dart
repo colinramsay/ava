@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:ava/notmuch/nm.dart';
 import 'package:ava/thread_view.dart';
 import 'package:flutter/cupertino.dart';
@@ -26,52 +24,45 @@ class MessageList extends StatefulWidget {
 }
 
 class _MessageListState extends State<MessageList> {
-  final nm = NotmuchDatabase();
-  late Threads _threads;
+  late List<Thread> _threads;
   late int _selectedIndex;
 
   _MessageListState() {
     _selectedIndex = 0;
-    _threads = Threads.query(nm.db, "tag:inbox");
+    _threads = Threads.query("tag:inbox");
   }
 
   _biggerFont({bool unread = false}) => TextStyle(
       fontSize: 16.0, fontWeight: unread ? FontWeight.bold : FontWeight.normal);
 
   void _refresh() {
-    _threads.destroy();
-    log("destroyed");
-    nm.close();
-    nm.reopen();
-    log("closed");
-    _threads = Threads.query(nm.db, "tag:inbox");
-    log("queried");
+    setState(() {
+      _threads = Threads.query("tag:inbox");
+    });
   }
 
   Widget _buildList() {
-    return ListView.separated(
-        separatorBuilder: (BuildContext context, int index) =>
-            const Divider(height: 1),
-        padding: const EdgeInsets.all(16.0),
-        itemCount: _threads.length,
-        itemBuilder: /*1*/ _buildItem);
+    return _threads.isNotEmpty
+        ? ListView.separated(
+            separatorBuilder: (BuildContext context, int index) =>
+                const Divider(height: 1),
+            padding: const EdgeInsets.all(16.0),
+            itemCount: _threads.length,
+            itemBuilder: /*1*/ _buildItem)
+        : const Center(child: Text("No mail!"));
   }
 
   TextButton _buildItem(BuildContext context, int i) {
     final thread = _threads[i];
-    final unread = thread!.tags.contains("unread");
+    final unread = thread.tags.contains("unread");
 
     return TextButton(
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-                builder: (context) => ThreadView(db: nm, thread: thread)),
+            MaterialPageRoute(builder: (context) => ThreadView(thread: thread)),
           ).then((value) {
-            setState(() {
-              _refresh();
-            });
-            //messages = Threads.query(nm.db, "tag:inbox");
+            _refresh();
           });
         },
         child: Container(
@@ -111,7 +102,7 @@ class _MessageListState extends State<MessageList> {
               ArchiveIntent: CallbackAction<ArchiveIntent>(
                 onInvoke: (ArchiveIntent intent) => setState(() {
                   final thread = _threads[_selectedIndex];
-                  thread!.archive(nm);
+                  thread.archive();
                   final scafMsg = ScaffoldMessenger.of(context);
                   scafMsg.showSnackBar(
                       SnackBar(content: Text('Archived ${thread.subject}')));
@@ -133,9 +124,7 @@ class _MessageListState extends State<MessageList> {
                 IconButton(
                     icon: const Icon(Icons.refresh_sharp),
                     onPressed: () {
-                      setState(() {
-                        _refresh();
-                      });
+                      _refresh();
                     })
               ]),
               body: _buildList(),
