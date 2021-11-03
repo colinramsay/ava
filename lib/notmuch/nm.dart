@@ -14,6 +14,7 @@ final LibNotmuch = libNotMuch();
 final NotmuchDatabase = NmDb();
 
 class NmDb {
+  var openCount = 0;
   Pointer<notmuch_database_t> get db => _database;
 
   late Pointer<notmuch_database_t> _database;
@@ -33,7 +34,7 @@ class NmDb {
       print("already open!");
       return;
     }
-
+    openCount = openCount + 1;
     print("opening...");
 
     final dbPath = '/mnt/data/mail/.notmuch'.toNativeUtf8();
@@ -60,13 +61,14 @@ class NmDb {
 
   void flushChanges() {
     print("flushing");
-
-    _nativeNotmuch.notmuch_database_close(db);
+    close();
     ensureOpen(msg: "flushChanges");
   }
 
   void close({msg = ""}) {
     print("closing $msg");
+    openCount = openCount - 1;
+
     try {
       _nativeNotmuch.notmuch_database_close(db);
     } finally {
