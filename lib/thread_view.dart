@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'notmuch/nm.dart';
+import 'notmuch/thread.dart';
 
 class ThreadView extends StatelessWidget {
   final Thread thread;

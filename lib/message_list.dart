@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import 'notmuch/thread.dart';
+
 class IncrementIntent extends Intent {
   const IncrementIntent();
 }
@@ -82,7 +84,8 @@ class _MessageListState extends State<MessageList> {
                 ),
                 Expanded(
                   //padding: const EdgeInsets.all(4.0),
-                  child: Text('$_selectedIndex ${thread.subject}',
+                  child: Text(
+                      '$_selectedIndex ${thread.subject} ${thread.folder()}',
                       style: _biggerFont(unread: unread)),
                 )
               ],
