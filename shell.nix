@@ -2,6 +2,10 @@
 
 pkgs.mkShell {
   buildInputs = with pkgs; [
+    gnupg
+    dart
+    xapian gmime3 talloc zlib
+    pythonPackages.python
     notmuch
     llvm
     llvmPackages.libclang
@@ -33,6 +37,9 @@ pkgs.mkShell {
     gtk3.dev
     util-linux
   ];
+
+  FLUTTER_PATH = "${pkgs.flutter}";
+
 
   CPATH = "${pkgs.xorg.libX11.dev}/include:${pkgs.xorg.xorgproto}/include:${pkgs.epoxy}/lib";
 

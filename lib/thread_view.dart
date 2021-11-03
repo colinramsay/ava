@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'notmuch/message.dart';
 import 'notmuch/nm.dart';
+import 'notmuch/thread.dart';
 
 class ThreadView extends StatelessWidget {
   final Thread thread;
@@ -8,6 +10,12 @@ class ThreadView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final List<Message> messages = [];
+    final itr = thread.messages;
+    while (itr.moveNext()) {
+      messages.add(itr.current);
+    }
+
     return WillPopScope(
         onWillPop: () async {
           thread.destroy();
@@ -25,14 +33,14 @@ class ThreadView extends StatelessWidget {
           ]),
           body: Center(
             child: ListView.builder(
-                itemCount: thread.messages.length,
+                itemCount: messages.length,
                 itemBuilder: (context, i) {
-                  final msg = thread.messages.elementAt(i);
+                  final msg = messages[i];
 
                   return Container(
                       padding: const EdgeInsets.all(20),
                       child: Text(
-                        msg!.asText,
+                        msg.messageId,
                         style: const TextStyle(fontSize: 16),
                       ));
                 }),

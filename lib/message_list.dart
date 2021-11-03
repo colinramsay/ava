@@ -1,9 +1,12 @@
 import 'package:ava/notmuch/nm.dart';
+import 'package:ava/notmuch/database.dart';
 import 'package:ava/thread_view.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+
+import 'notmuch/thread.dart';
 
 class IncrementIntent extends Intent {
   const IncrementIntent();
@@ -29,7 +32,7 @@ class _MessageListState extends State<MessageList> {
 
   _MessageListState() {
     _selectedIndex = 0;
-    _threads = Threads.query("tag:inbox");
+    _threads = getThreads();
   }
 
   _biggerFont({bool unread = false}) => TextStyle(
@@ -37,8 +40,19 @@ class _MessageListState extends State<MessageList> {
 
   void _refresh() {
     setState(() {
-      _threads = Threads.query("tag:inbox");
+      _threads = getThreads();
     });
+  }
+
+  List<Thread> getThreads() {
+    List<Thread> threads = [];
+    var itr = DB.threads("tag:inbox");
+
+    while (itr.moveNext()) {
+      threads.add(itr.current);
+    }
+
+    return threads;
   }
 
   Widget _buildList() {
@@ -54,6 +68,9 @@ class _MessageListState extends State<MessageList> {
 
   TextButton _buildItem(BuildContext context, int i) {
     final thread = _threads[i];
+
+    print("builditem $thread");
+
     final unread = thread.tags.contains("unread");
 
     return TextButton(
@@ -101,11 +118,11 @@ class _MessageListState extends State<MessageList> {
             actions: <Type, Action<Intent>>{
               ArchiveIntent: CallbackAction<ArchiveIntent>(
                 onInvoke: (ArchiveIntent intent) => setState(() {
-                  final thread = _threads[_selectedIndex];
-                  thread.archive();
-                  final scafMsg = ScaffoldMessenger.of(context);
-                  scafMsg.showSnackBar(
-                      SnackBar(content: Text('Archived ${thread.subject}')));
+                  // final thread = _threads[_selectedIndex];
+                  // thread.archive();
+                  // final scafMsg = ScaffoldMessenger.of(context);
+                  // scafMsg.showSnackBar(
+                  //     SnackBar(content: Text('Archived ${thread.subject}')));
                 }),
               ),
               IncrementIntent: CallbackAction<IncrementIntent>(
