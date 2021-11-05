@@ -34,8 +34,28 @@ class Message extends Base {
     return BinString.fromCffi(ret);
   }
 
+  String get filename {
+    final ret = LibNotmuch.notmuch_message_get_filename(_msg_p.ptr);
+
+    return BinString.fromCffi(ret);
+  }
+
   TagSet get tags {
     return TagSet(this, () => _msg_p.ptr, LibNotmuch.notmuch_message_get_tags);
+  }
+
+  MimeMessage get parsedMessage {
+    final file = File(filename);
+    final lines = file.readAsLinesSync();
+    return MimeMessage.parseFromText(lines.join('\r\n'));
+  }
+
+  String get asHtml {
+    return parsedMessage.decodeTextHtmlPart()!;
+  }
+
+  String get asText {
+    return parsedMessage.decodeTextPlainPart()!;
   }
 
   @override

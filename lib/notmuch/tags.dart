@@ -79,6 +79,7 @@ class TagSet extends Base with SetMixin<String> {
     var tag = str.toNativeUtf8().cast<Int8>();
     var ret = LibNotmuch.notmuch_message_remove_tag(_parentPtrGetterFn(), tag);
     if (ret != notmuch_status_t.NOTMUCH_STATUS_SUCCESS) {
+      print("Return value when trying to remove tag: $ret");
       throw NotmuchError(ret);
     }
     return true;

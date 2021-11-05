@@ -40,7 +40,7 @@ class ThreadView extends StatelessWidget {
                   return Container(
                       padding: const EdgeInsets.all(20),
                       child: Text(
-                        msg.messageId,
+                        msg.asText,
                         style: const TextStyle(fontSize: 16),
                       ));
                 }),

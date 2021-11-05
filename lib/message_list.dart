@@ -118,11 +118,11 @@ class _MessageListState extends State<MessageList> {
             actions: <Type, Action<Intent>>{
               ArchiveIntent: CallbackAction<ArchiveIntent>(
                 onInvoke: (ArchiveIntent intent) => setState(() {
-                  // final thread = _threads[_selectedIndex];
-                  // thread.archive();
-                  // final scafMsg = ScaffoldMessenger.of(context);
-                  // scafMsg.showSnackBar(
-                  //     SnackBar(content: Text('Archived ${thread.subject}')));
+                  final thread = _threads[_selectedIndex];
+                  thread.archive();
+                  final scafMsg = ScaffoldMessenger.of(context);
+                  scafMsg.showSnackBar(
+                      SnackBar(content: Text('Archived ${thread.subject}')));
                 }),
               ),
               IncrementIntent: CallbackAction<IncrementIntent>(

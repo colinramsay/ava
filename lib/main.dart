@@ -11,6 +11,7 @@ class Ava extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Ava',
       theme: ThemeData(
         primarySwatch: Colors.blueGrey,

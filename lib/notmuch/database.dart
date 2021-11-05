@@ -14,11 +14,11 @@ class Database extends Base {
   late MemoryPointer<notmuch_database_t> _database_p;
   var _closed = true;
 
-  Database() {
-    open();
+  Database([mode = notmuch_database_mode_t.NOTMUCH_DATABASE_MODE_READ_ONLY]) {
+    open(mode);
   }
 
-  void open() {
+  void open([mode = notmuch_database_mode_t.NOTMUCH_DATABASE_MODE_READ_ONLY]) {
     final dbPath = '/mnt/data/mail/.notmuch'.toNativeUtf8();
     final configPath =
         '/home/colinramsay/.config/notmuch/default/config'.toNativeUtf8();
@@ -29,7 +29,7 @@ class Database extends Base {
 
     final res = LibNotmuch.notmuch_database_open_with_config(
         dbPath.cast<Int8>(),
-        notmuch_database_mode_t.NOTMUCH_DATABASE_MODE_READ_WRITE,
+        mode,
         configPath.cast(),
         profile.cast(),
         dbpp,
@@ -108,6 +108,11 @@ class Database extends Base {
     if (ret != notmuch_status_t.NOTMUCH_STATUS_SUCCESS) {
       throw NotmuchError(ret);
     }
+  }
+
+  void openForWrite() {
+    close();
+    open(notmuch_database_mode_t.NOTMUCH_DATABASE_MODE_READ_WRITE);
   }
 }
 

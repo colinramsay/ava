@@ -50,6 +50,11 @@ class Thread extends Base {
     return MessageIterator(this, msgs_p, _db);
   }
 
+  String get threadId {
+    var ret = LibNotmuch.notmuch_thread_get_thread_id(_thread_p.ptr);
+    return BinString.fromCffi(ret);
+  }
+
   String get authors {
     var ret = LibNotmuch.notmuch_thread_get_authors(_thread_p.ptr);
     return BinString.fromCffi(ret);
@@ -66,12 +71,27 @@ class Thread extends Base {
   }
 
   void markAsRead() {
-    MessageIterator itr = messages;
+    removeTag("unread");
+  }
+
+  void removeTag(String tag) {
+    Database writable =
+        Database(notmuch_database_mode_t.NOTMUCH_DATABASE_MODE_READ_WRITE);
+
+    MessageIterator itr = writable.messages("thread:$threadId");
+
     while (itr.moveNext()) {
+      print("removing tag");
       Message msg = itr.current;
       msg.tags.remove("unread");
     }
+
+    writable.close();
     DB.flush();
+  }
+
+  void archive() {
+    removeTag("inbox");
   }
 }
 
