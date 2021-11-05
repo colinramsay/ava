@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:ava/notmuch/nm.dart';
 import 'package:ava/notmuch/database.dart';
 import 'package:ava/thread_view.dart';
@@ -29,10 +31,13 @@ class MessageList extends StatefulWidget {
 class _MessageListState extends State<MessageList> {
   late List<Thread> _threads;
   late int _selectedIndex;
-
   _MessageListState() {
     _selectedIndex = 0;
     _threads = getThreads();
+
+    ProcessSignal.sigusr1.watch().listen((signal) {
+      _refresh();
+    });
   }
 
   _biggerFont({bool unread = false}) => TextStyle(

@@ -22,15 +22,23 @@ class ThreadView extends StatelessWidget {
           return true;
         },
         child: Scaffold(
-          appBar:
-              AppBar(title: Text("Thread with ${thread.authors}"), actions: [
-            IconButton(
-                icon: const Icon(Icons.archive_sharp),
-                onPressed: () {
-                  thread.markAsRead();
-                  Navigator.pop(context);
-                })
-          ]),
+          appBar: AppBar(
+            title: Text("Thread with ${thread.authors}"),
+            actions: [
+              IconButton(
+                  icon: const Icon(Icons.archive_sharp),
+                  onPressed: () {
+                    thread.archive();
+                    Navigator.pop(context);
+                  }),
+              IconButton(
+                  icon: const Icon(Icons.mark_email_read_sharp),
+                  onPressed: () {
+                    thread.markAsRead();
+                    Navigator.pop(context);
+                  })
+            ],
+          ),
           body: Center(
             child: ListView.builder(
                 itemCount: messages.length,

@@ -83,7 +83,7 @@ class Thread extends Base {
     while (itr.moveNext()) {
       print("removing tag");
       Message msg = itr.current;
-      msg.tags.remove("unread");
+      msg.tags.remove(tag);
     }
 
     writable.close();
