@@ -22,6 +22,10 @@ class ArchiveIntent extends Intent {
   const ArchiveIntent();
 }
 
+class ViewIntent extends Intent {
+  const ViewIntent();
+}
+
 class MessageList extends StatefulWidget {
   const MessageList({Key? key}) : super(key: key);
   @override
@@ -51,6 +55,7 @@ class _MessageListState extends State<MessageList> {
 
   List<Thread> getThreads() {
     List<Thread> threads = [];
+    DB.flush();
     var itr = DB.threads("tag:inbox");
 
     while (itr.moveNext()) {
@@ -79,13 +84,9 @@ class _MessageListState extends State<MessageList> {
     final unread = thread.tags.contains("unread");
 
     return TextButton(
+        autofocus: i == 0,
         onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => ThreadView(thread: thread)),
-          ).then((value) {
-            _refresh();
-          });
+          _view(thread);
         },
         child: Container(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
@@ -115,16 +116,25 @@ class _MessageListState extends State<MessageList> {
   Widget build(BuildContext context) {
     return Shortcuts(
         shortcuts: <ShortcutActivator, Intent>{
-          LogicalKeySet(LogicalKeyboardKey.arrowUp): const IncrementIntent(),
-          LogicalKeySet(LogicalKeyboardKey.arrowDown): const DecrementIntent(),
+          LogicalKeySet(LogicalKeyboardKey.arrowDown): const IncrementIntent(),
+          LogicalKeySet(LogicalKeyboardKey.arrowUp): const DecrementIntent(),
           LogicalKeySet(LogicalKeyboardKey.keyA): const ArchiveIntent(),
+          LogicalKeySet(LogicalKeyboardKey.enter): const ViewIntent(),
         },
         child: Actions(
             actions: <Type, Action<Intent>>{
+              ViewIntent: CallbackAction<ViewIntent>(
+                onInvoke: (ViewIntent intent) => setState(() {
+                  final thread = _threads[_selectedIndex];
+
+                  _view(thread);
+                }),
+              ),
               ArchiveIntent: CallbackAction<ArchiveIntent>(
                 onInvoke: (ArchiveIntent intent) => setState(() {
                   final thread = _threads[_selectedIndex];
                   thread.archive();
+                  _refresh();
                   final scafMsg = ScaffoldMessenger.of(context);
                   scafMsg.showSnackBar(
                       SnackBar(content: Text('Archived ${thread.subject}')));
@@ -132,12 +142,16 @@ class _MessageListState extends State<MessageList> {
               ),
               IncrementIntent: CallbackAction<IncrementIntent>(
                 onInvoke: (IncrementIntent intent) => setState(() {
-                  _selectedIndex = _selectedIndex + 1;
+                  if (_selectedIndex < _threads.length - 1) {
+                    _selectedIndex = _selectedIndex + 1;
+                  }
                 }),
               ),
               DecrementIntent: CallbackAction<DecrementIntent>(
                 onInvoke: (DecrementIntent intent) => setState(() {
-                  _selectedIndex = _selectedIndex - 1;
+                  if (_selectedIndex > 0) {
+                    _selectedIndex = _selectedIndex - 1;
+                  }
                 }),
               ),
             },
@@ -151,5 +165,14 @@ class _MessageListState extends State<MessageList> {
               ]),
               body: _buildList(),
             )));
+  }
+
+  void _view(Thread thread) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => ThreadView(thread: thread)),
+    ).then((value) {
+      _refresh();
+    });
   }
 }
