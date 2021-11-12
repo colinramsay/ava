@@ -83,10 +83,20 @@ class Thread extends Base {
     while (itr.moveNext()) {
       print("removing tag");
       Message msg = itr.current;
-      msg.tags.remove(tag);
+
+      if (msg.tags.contains(tag)) {
+        print("Starting...");
+        msg.tags.remove(tag);
+        print("Done!");
+      } else {
+        print("Skipped tag");
+      }
     }
 
-    writable.close();
+    print("Destroying writable database");
+    writable.destroy();
+    print("Flushing main database");
+
     DB.flush();
   }
 

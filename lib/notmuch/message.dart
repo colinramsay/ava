@@ -5,8 +5,7 @@ import 'package:ava/notmuch/base.dart';
 import 'package:ava/notmuch/bindings.dart';
 import 'package:ava/notmuch/tags.dart';
 import 'package:enough_mail/mime_message.dart';
-import 'package:ffi/ffi.dart';
-import 'package:ffi/src/utf8.dart';
+import 'package:html/parser.dart';
 
 import 'nm.dart';
 
@@ -55,7 +54,26 @@ class Message extends Base {
   }
 
   String get asText {
-    return parsedMessage.decodeTextPlainPart()!;
+    final plainTextPart = parsedMessage.decodeTextPlainPart();
+
+    if (plainTextPart != null) {
+      return plainTextPart;
+    }
+
+    final bodyNode = parse(asHtml).body;
+
+    if (bodyNode == null) {
+      return "Can't get a text version of the message.";
+    }
+
+    final body = parse(bodyNode.text);
+
+    final docEl = body.documentElement;
+
+    if (docEl == null) {
+      return "Can't get a text version of the message";
+    }
+    return docEl.text;
   }
 
   @override
@@ -137,7 +155,7 @@ class MessageIterator implements Iterator<Message> {
   bool moveNext() {
     var status = LibNotmuch.notmuch_messages_valid(_messages_p.ptr);
 
-    print("mn $status");
+    print("Message iterator status: $status");
 
     if (status != TRUE) {
       destroy();
@@ -147,12 +165,10 @@ class MessageIterator implements Iterator<Message> {
     Pointer<notmuch_message_t> obj_p =
         LibNotmuch.notmuch_messages_get(_messages_p.ptr);
 
-    print("msg val ${obj_p == nullptr} $obj_p");
+    print("Is message null? ${obj_p == nullptr}");
 
     LibNotmuch.notmuch_messages_move_to_next(_messages_p.ptr);
     _current = Message(this, obj_p, _db);
-
-    print("msg $_current");
 
     return true;
   }
