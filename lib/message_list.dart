@@ -105,8 +105,8 @@ class _MessageListState extends State<MessageList> {
                 ),
                 Expanded(
                   //padding: const EdgeInsets.all(4.0),
-                  child: Text('$_selectedIndex ${thread.subject}',
-                      style: _biggerFont(unread: unread)),
+                  child:
+                      Text(thread.subject, style: _biggerFont(unread: unread)),
                 )
               ],
             )));
