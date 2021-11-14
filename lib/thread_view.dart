@@ -14,11 +14,13 @@ class ThreadView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<Message> messages = [];
+    List<Message> messages = [];
     final itr = thread.messages;
     while (itr.moveNext()) {
       messages.add(itr.current);
     }
+
+    messages = messages.reversed.toList();
 
     return Shortcuts(
         shortcuts: <ShortcutActivator, Intent>{
@@ -54,7 +56,9 @@ class ThreadView extends StatelessWidget {
                     ],
                   ),
                   body: Center(
-                    child: ListView.builder(
+                    child: ListView.separated(
+                        separatorBuilder: (BuildContext context, int index) =>
+                            const Divider(height: 2),
                         itemCount: messages.length,
                         itemBuilder: (context, i) {
                           final msg = messages[i];
