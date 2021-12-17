@@ -1,6 +1,17 @@
 { pkgs ? import <nixpkgs> { } }:
 
+
 pkgs.mkShell {
+  # # 
+
+  materialFonts = pkgs.fetchzip {
+			url = "https://storage.googleapis.com/flutter_infra_release/flutter/fonts/bd151aa3c2f7231344411a01dba4ef61b3cd56b2/fonts.zip";
+			sha512 = "z4M6JxQGA+hiylnPQip0V05be3gy1KUCvXfDyS1x1q3MJrx8Y3ekOFVHxOE2gWjEcmskSV90WlUYQN4AcLcZCw==";
+      stripRoot = false;
+		};
+
+  src = "./";
+
   buildInputs = with pkgs; [
     gnupg
     dart
@@ -10,6 +21,7 @@ pkgs.mkShell {
     llvm
     llvmPackages.libclang
     gdb
+    unzip
   ];
 
   nativeBuildInputs = with pkgs; [
@@ -46,4 +58,19 @@ pkgs.mkShell {
   CLANG_PATH = with pkgs; pkgs.lib.makeLibraryPath [ llvmPackages.libclang ];
 
   LD_LIBRARY_PATH = with pkgs; "$LD_LIBRARY_PATH:${pkgs.lib.makeLibraryPath [ clang llvm notmuch pango epoxy gtk3 harfbuzz atk cairo gdk_pixbuf glib ]}";
+# "build/flutter_assets/fonts/"
+  phases = [ "unpackPhase" "buildPhase" ];
+  unpackPhase = ''
+  runHook preUnpack
+    mkdir -p build/flutter_assets/fonts/
+    cp $materialFonts/* build/flutter_assets/fonts/
+    #ls build/flutter_assets/fonts/
+    runHook postUnpack
+    echo "listing.."
+    ls -la .
+  '';
+  buildPhase = ''
+  ls -la
+  flutter build linux
+  '';
 }
