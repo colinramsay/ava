@@ -1,5 +1,4 @@
 import 'package:ava/notmuch/thread.dart';
-import 'package:flutter/cupertino.dart';
 import 'dart:core' as core;
 
 import 'package:flutter/material.dart';
@@ -64,16 +63,14 @@ class _ListState extends State<List> {
               this.focused = focused;
             });
           },
-          child: Container(
-            child: ListView.builder(
-                padding: const EdgeInsets.all(16.0),
-                itemCount: threads.length,
-                itemBuilder: /*1*/ (context, i) => searchrow.Row(
-                      selected: _selectedIndex == i,
-                      onPressed: () => widget.onRowPressed(threads[i]),
-                      thread: threads[i],
-                    )),
-          )),
+          child: ListView.builder(
+              padding: const EdgeInsets.all(16.0),
+              itemCount: threads.length,
+              itemBuilder: /*1*/ (context, i) => searchrow.Row(
+                    selected: _selectedIndex == i,
+                    onPressed: () => widget.onRowPressed(threads[i]),
+                    thread: threads[i],
+                  ))),
     );
 
     var innerChild =
@@ -106,7 +103,6 @@ class _ListState extends State<List> {
           ),
           IncrementIntent: CallbackAction<IncrementIntent>(
             onInvoke: (IncrementIntent intent) => setState(() {
-              core.print("incre");
               if (_selectedIndex < threads.length - 1) {
                 _selectedIndex = _selectedIndex + 1;
               }
@@ -114,8 +110,6 @@ class _ListState extends State<List> {
           ),
           DecrementIntent: CallbackAction<DecrementIntent>(
             onInvoke: (DecrementIntent intent) => setState(() {
-              core.print("decre");
-
               if (_selectedIndex > 0) {
                 _selectedIndex = _selectedIndex - 1;
               }

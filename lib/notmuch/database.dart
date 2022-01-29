@@ -5,13 +5,12 @@ import 'package:ava/notmuch/message.dart';
 import 'package:ava/notmuch/query.dart';
 import 'package:ava/notmuch/thread.dart';
 import 'package:ffi/ffi.dart';
-import 'package:ffi/src/utf8.dart';
 import './bindings.dart';
 import 'nm.dart';
 import 'dart:ffi' as ffi;
 
 class Database extends Base {
-  late MemoryPointer<notmuch_database_t> _database_p;
+  late MemoryPointer<notmuch_database_t> databasePtr;
   var _closed = true;
 
   Database([mode = notmuch_database_mode_t.NOTMUCH_DATABASE_MODE_READ_ONLY]) {
@@ -48,13 +47,13 @@ class Database extends Base {
       throw NotmuchError.withError(res, error);
     }
 
-    _database_p = MemoryPointer(dbpp.value);
+    databasePtr = MemoryPointer(dbpp.value);
 
     _closed = false;
   }
 
   void close() {
-    var ret = LibNotmuch.notmuch_database_close(_database_p.ptr);
+    var ret = LibNotmuch.notmuch_database_close(databasePtr.ptr);
     if (ret != notmuch_status_t.NOTMUCH_STATUS_SUCCESS) {
       throw NotmuchError(ret);
     }
@@ -66,31 +65,35 @@ class Database extends Base {
     open();
   }
 
-  Query _create_query(String query) {
-    var query_p = LibNotmuch.notmuch_query_create(
-        _database_p.ptr, query.toNativeUtf8().cast());
+  Query createQuery(String query) {
+    var queryPtr = LibNotmuch.notmuch_query_create(
+        databasePtr.ptr, query.toNativeUtf8().cast());
 
-    if (query_p == ffi.nullptr) {
-      throw OutOfMemoryError();
+    if (queryPtr == ffi.nullptr) {
+      throw const OutOfMemoryError();
     }
 
-    return Query(this, query_p);
+    return Query(this, queryPtr);
   }
 
   MessageIterator messages(String querystring) {
-    var query = _create_query(querystring);
+    var query = createQuery(querystring);
     return query.messages();
   }
 
   ThreadIterator threads(String querystring) {
-    var query = _create_query(querystring);
+    var query = createQuery(querystring);
     return query.threads();
+  }
+
+  bool get closed {
+    return _closed;
   }
 
   @override
   bool get alive {
     try {
-      _database_p;
+      databasePtr;
       return true;
     } on ObjectDestroyedError {
       return false;
@@ -99,10 +102,11 @@ class Database extends Base {
 
   @override
   void destroy() {
+    // ignore: prefer_typing_uninitialized_variables
     var ret;
     try {
-      ret = LibNotmuch.notmuch_database_destroy(_database_p.ptr);
-      _database_p.ptr = null;
+      ret = LibNotmuch.notmuch_database_destroy(databasePtr.ptr);
+      databasePtr.ptr = null;
     } on ObjectDestroyedError {
       ret = notmuch_status_t.NOTMUCH_STATUS_SUCCESS;
     }
@@ -117,4 +121,5 @@ class Database extends Base {
   }
 }
 
+// ignore: non_constant_identifier_names
 Database DB = Database();

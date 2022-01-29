@@ -2,24 +2,24 @@ import 'dart:ffi';
 import 'package:ava/notmuch/base.dart';
 import 'package:ava/notmuch/database.dart';
 import 'package:ava/notmuch/tags.dart';
+import 'package:flutter/foundation.dart';
 
 import './bindings.dart';
-
-import 'package:ffi/ffi.dart';
 
 import 'message.dart';
 import 'nm.dart';
 
 class Thread extends Base {
-  late MemoryPointer<notmuch_thread_t> _thread_p;
+  late MemoryPointer<notmuch_thread_t> threadPointer;
 
+  // ignore: prefer_typing_uninitialized_variables
   var _parent;
 
-  var _db;
+  late Database _db;
 
-  Thread(parent, Pointer<notmuch_thread_t> thread_p, db) {
+  Thread(parent, Pointer<notmuch_thread_t> threadp, db) {
     _parent = parent;
-    _thread_p = MemoryPointer(thread_p);
+    threadPointer = MemoryPointer(threadp);
     _db = db;
   }
 
@@ -30,7 +30,7 @@ class Thread extends Base {
     }
 
     try {
-      _thread_p.ptr;
+      threadPointer.ptr;
     } on ObjectDestroyedError {
       return false;
     }
@@ -40,28 +40,28 @@ class Thread extends Base {
   @override
   void destroy() {
     if (alive) {
-      LibNotmuch.notmuch_thread_destroy(_thread_p.ptr);
-      _thread_p.ptr = null;
+      LibNotmuch.notmuch_thread_destroy(threadPointer.ptr);
+      threadPointer.ptr = null;
     }
   }
 
   MessageIterator get messages {
-    var msgs_p = LibNotmuch.notmuch_thread_get_messages(_thread_p.ptr);
-    return MessageIterator(this, msgs_p, _db);
+    var msgsP = LibNotmuch.notmuch_thread_get_messages(threadPointer.ptr);
+    return MessageIterator(this, msgsP, _db);
   }
 
   String get threadId {
-    var ret = LibNotmuch.notmuch_thread_get_thread_id(_thread_p.ptr);
+    var ret = LibNotmuch.notmuch_thread_get_thread_id(threadPointer.ptr);
     return BinString.fromCffi(ret);
   }
 
   String get authors {
-    var ret = LibNotmuch.notmuch_thread_get_authors(_thread_p.ptr);
+    var ret = LibNotmuch.notmuch_thread_get_authors(threadPointer.ptr);
     return BinString.fromCffi(ret);
   }
 
   DateTime get newestDate {
-    var ret = LibNotmuch.notmuch_thread_get_newest_date(_thread_p.ptr);
+    var ret = LibNotmuch.notmuch_thread_get_newest_date(threadPointer.ptr);
 
     // https://en.cppreference.com/w/c/chrono/time_t
     // time_t should be seconds so convert to milliseconds
@@ -69,13 +69,13 @@ class Thread extends Base {
   }
 
   String get subject {
-    var ret = LibNotmuch.notmuch_thread_get_subject(_thread_p.ptr);
+    var ret = LibNotmuch.notmuch_thread_get_subject(threadPointer.ptr);
     return BinString.fromCffi(ret);
   }
 
   TagSet get tags {
     return TagSet(
-        this, () => _thread_p.ptr, LibNotmuch.notmuch_thread_get_tags);
+        this, () => threadPointer.ptr, LibNotmuch.notmuch_thread_get_tags);
   }
 
   void markAsRead() {
@@ -89,21 +89,33 @@ class Thread extends Base {
     MessageIterator itr = writable.messages("thread:$threadId");
 
     while (itr.moveNext()) {
-      print("removing tag");
+      if (kDebugMode) {
+        print("removing tag");
+      }
       Message msg = itr.current;
 
       if (msg.tags.contains(tag)) {
-        print("Starting...");
+        if (kDebugMode) {
+          print("Starting...");
+        }
         msg.tags.remove(tag);
-        print("Done!");
+        if (kDebugMode) {
+          print("Done!");
+        }
       } else {
-        print("Skipped tag");
+        if (kDebugMode) {
+          print("Skipped tag");
+        }
       }
     }
 
-    print("Destroying writable database");
+    if (kDebugMode) {
+      print("Destroying writable database");
+    }
     writable.destroy();
-    print("Flushing main database");
+    if (kDebugMode) {
+      print("Flushing main database");
+    }
 
     DB.flush();
   }
@@ -114,16 +126,17 @@ class Thread extends Base {
 }
 
 class ThreadIterator implements Iterator<Thread> {
+  // ignore: prefer_typing_uninitialized_variables
   var _parent;
   late Thread _current;
 
-  var _db;
+  late Database _db;
 
-  late MemoryPointer<notmuch_threads_t> _threads_p;
+  late MemoryPointer<notmuch_threads_t> threadsPointer;
 
-  ThreadIterator(parent, Pointer<notmuch_threads_t> threads_p, db) {
+  ThreadIterator(parent, Pointer<notmuch_threads_t> threadsP, db) {
     _parent = parent;
-    _threads_p = MemoryPointer(threads_p);
+    threadsPointer = MemoryPointer(threadsP);
     _db = db;
   }
 
@@ -136,7 +149,7 @@ class ThreadIterator implements Iterator<Thread> {
     }
 
     try {
-      _threads_p.ptr;
+      threadsPointer.ptr;
     } on ObjectDestroyedError {
       return false;
     }
@@ -147,12 +160,12 @@ class ThreadIterator implements Iterator<Thread> {
   void destroy() {
     if (alive) {
       try {
-        LibNotmuch.notmuch_threads_destroy(_threads_p.ptr);
+        LibNotmuch.notmuch_threads_destroy(threadsPointer.ptr);
       } on ObjectDestroyedError {
         // do nothing
       }
 
-      _threads_p.ptr = null;
+      threadsPointer.ptr = null;
     }
   }
 
@@ -167,18 +180,20 @@ class ThreadIterator implements Iterator<Thread> {
 
   @override
   bool moveNext() {
-    var status = LibNotmuch.notmuch_threads_valid(_threads_p.ptr);
+    var status = LibNotmuch.notmuch_threads_valid(threadsPointer.ptr);
     if (status != TRUE) {
-      print("not valid $status");
+      if (kDebugMode) {
+        print("not valid $status");
+      }
 
       destroy();
       return false;
     }
 
-    var obj_p = LibNotmuch.notmuch_threads_get(_threads_p.ptr);
-    LibNotmuch.notmuch_threads_move_to_next(_threads_p.ptr);
+    var objP = LibNotmuch.notmuch_threads_get(threadsPointer.ptr);
+    LibNotmuch.notmuch_threads_move_to_next(threadsPointer.ptr);
 
-    _current = Thread(this, obj_p, _db);
+    _current = Thread(this, objP, _db);
     return true;
   }
 

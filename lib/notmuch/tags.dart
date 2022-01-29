@@ -3,13 +3,15 @@ import 'dart:ffi';
 import 'package:ava/notmuch/base.dart';
 import 'package:ava/notmuch/bindings.dart';
 import 'package:ava/notmuch/nm.dart';
-import 'package:ffi/src/utf8.dart';
+import 'package:ffi/ffi.dart';
 
 class TagSet extends Base with SetMixin<String> {
-  var _parent;
+  late Base _parent;
 
+  // ignore: prefer_typing_uninitialized_variables
   var _parentPtrGetterFn;
 
+  // ignore: prefer_typing_uninitialized_variables
   var _tagGetterFn;
 
   // parent: thread/message
@@ -41,11 +43,11 @@ class TagSet extends Base with SetMixin<String> {
   }
 
   @override
-  bool contains(Object? tag) {
+  bool contains(Object? element) {
     TagsIterator iterator = this.iterator;
 
     while (iterator.moveNext()) {
-      if (iterator.current == tag) {
+      if (iterator.current == element) {
         return true;
       }
     }
@@ -54,22 +56,20 @@ class TagSet extends Base with SetMixin<String> {
 
   @override
   TagsIterator get iterator {
-    var tags_p = _tagGetterFn(_parentPtrGetterFn());
+    var tagsP = _tagGetterFn(_parentPtrGetterFn());
 
-    if (tags_p == nullptr) {
+    if (tagsP == nullptr) {
       throw NullPointerError();
     }
-    var tags = TagsIterator(this, tags_p);
+    var tags = TagsIterator(this, tagsP);
     return tags;
   }
 
   @override
-  // TODO: implement length
   int get length => throw UnimplementedError();
 
   @override
   String lookup(Object? element) {
-    // TODO: implement lookup
     throw UnimplementedError();
   }
 
@@ -79,7 +79,6 @@ class TagSet extends Base with SetMixin<String> {
     var tag = str.toNativeUtf8().cast<Int8>();
     var ret = LibNotmuch.notmuch_message_remove_tag(_parentPtrGetterFn(), tag);
     if (ret != notmuch_status_t.NOTMUCH_STATUS_SUCCESS) {
-      print("Return value when trying to remove tag: $ret");
       throw NotmuchError(ret);
     }
     return true;
@@ -87,23 +86,24 @@ class TagSet extends Base with SetMixin<String> {
 
   @override
   Set<String> toSet() {
-    // TODO: implement toSet
     throw UnimplementedError();
   }
 }
 
 class TagsIterator extends Base implements Iterator<String> {
+  // ignore: prefer_typing_uninitialized_variables
   var _parent;
 
-  late MemoryPointer<notmuch_tags_t> _tags_p;
+  late MemoryPointer<notmuch_tags_t> tagsPointer;
 
   late String _current;
 
+  @override
   String get current => _current;
 
-  TagsIterator(parent, tags_p) {
+  TagsIterator(parent, tagsP) {
     _parent = parent;
-    _tags_p = MemoryPointer(tags_p);
+    tagsPointer = MemoryPointer(tagsP);
   }
 
   @override
@@ -112,7 +112,7 @@ class TagsIterator extends Base implements Iterator<String> {
       return false;
     }
     try {
-      _tags_p.ptr;
+      tagsPointer.ptr;
     } on ObjectDestroyedError {
       return false;
     }
@@ -123,24 +123,24 @@ class TagsIterator extends Base implements Iterator<String> {
   void destroy() {
     if (alive) {
       try {
-        LibNotmuch.notmuch_tags_destroy(_tags_p.ptr);
+        LibNotmuch.notmuch_tags_destroy(tagsPointer.ptr);
       } on ObjectDestroyedError {
         // nothing
       }
     }
-    _tags_p.ptr = null;
+    tagsPointer.ptr = null;
   }
 
   @override
   bool moveNext() {
-    if (LibNotmuch.notmuch_tags_valid(_tags_p.ptr) != TRUE) {
+    if (LibNotmuch.notmuch_tags_valid(tagsPointer.ptr) != TRUE) {
       destroy();
       return false;
     }
-    var tag_p = LibNotmuch.notmuch_tags_get(_tags_p.ptr);
-    _current = BinString.fromCffi(tag_p);
+    var tagP = LibNotmuch.notmuch_tags_get(tagsPointer.ptr);
+    _current = BinString.fromCffi(tagP);
 
-    LibNotmuch.notmuch_tags_move_to_next(_tags_p.ptr);
+    LibNotmuch.notmuch_tags_move_to_next(tagsPointer.ptr);
 
     return true;
   }

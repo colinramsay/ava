@@ -7,24 +7,23 @@ import 'package:ava/notmuch/nm.dart';
 import 'package:ava/notmuch/thread.dart';
 import 'package:ffi/ffi.dart';
 import './bindings.dart';
-// __all__ = []
 
 class Query extends Base {
-  late MemoryPointer<notmuch_query_t> _query_p;
-  late Database _db;
+  late MemoryPointer<notmuch_query_t> queryPointer;
+  late Database database;
 
-  Query(db, query_p) {
-    this._db = db;
-    this._query_p = MemoryPointer(query_p);
+  Query(db, queryp) {
+    database = db;
+    queryPointer = MemoryPointer(queryp);
   }
 
   @override
   bool get alive {
-    if (!_db.alive) {
+    if (!database.alive) {
       return false;
     }
     try {
-      _query_p.ptr;
+      queryPointer.ptr;
     } on ObjectDestroyedError {
       return false;
     }
@@ -34,36 +33,38 @@ class Query extends Base {
   @override
   void destroy() {
     if (alive == true) {
-      LibNotmuch.notmuch_query_destroy(_query_p.ptr);
+      LibNotmuch.notmuch_query_destroy(queryPointer.ptr);
     }
-    _query_p.ptr = null;
+    queryPointer.ptr = null;
   }
 
   get query {
-    final q = LibNotmuch.notmuch_query_get_query_string(_query_p.ptr);
+    final q = LibNotmuch.notmuch_query_get_query_string(queryPointer.ptr);
     return BinString.fromCffi(q);
   }
 
   MessageIterator messages() {
-    Pointer<Pointer<notmuch_messages_t>> msgs_pp = calloc();
+    Pointer<Pointer<notmuch_messages_t>> msgsPp = calloc();
 
     //   msgs_pp = capi.ffi.new('notmuch_messages_t**')
-    var ret = LibNotmuch.notmuch_query_search_messages(_query_p.ptr, msgs_pp);
+    var ret =
+        LibNotmuch.notmuch_query_search_messages(queryPointer.ptr, msgsPp);
 
     if (ret != notmuch_status_t.NOTMUCH_STATUS_SUCCESS) {
       throw NotmuchError(ret);
     }
 
-    return MessageIterator(this, msgs_pp.value, _db);
+    return MessageIterator(this, msgsPp.value, database);
   }
 
   ThreadIterator threads() {
-    Pointer<Pointer<notmuch_threads_t>> threads_pp = calloc();
+    Pointer<Pointer<notmuch_threads_t>> threadsPp = calloc();
 
-    var ret = LibNotmuch.notmuch_query_search_threads(_query_p.ptr, threads_pp);
+    var ret =
+        LibNotmuch.notmuch_query_search_threads(queryPointer.ptr, threadsPp);
     if (ret != notmuch_status_t.NOTMUCH_STATUS_SUCCESS) {
       throw NotmuchError(ret);
     }
-    return ThreadIterator(this, threads_pp.value, _db);
+    return ThreadIterator(this, threadsPp.value, database);
   }
 }

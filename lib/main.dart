@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:ava/search/container.dart' as search;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 Future<ServerSocket> socklock() async {
@@ -14,17 +15,23 @@ void startServer() {
       socket.listen(
         (List<int> data) {
           String result = String.fromCharCodes(data);
-          print(result.substring(0, result.length - 1));
+          if (kDebugMode) {
+            print(result.substring(0, result.length - 1));
+          }
           socket.close();
         },
         onError: (error) {
-          print(error);
+          if (kDebugMode) {
+            print(error);
+          }
           socket.close();
         },
 
         // handle the client closing the connection
         onDone: () {
-          print('Client left');
+          if (kDebugMode) {
+            print('Client left');
+          }
           socket.close();
         },
       );

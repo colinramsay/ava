@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:ava/notmuch/base.dart';
 import 'package:ava/notmuch/bindings.dart';
+import 'package:ava/notmuch/database.dart';
 import 'package:ava/notmuch/tags.dart';
 import 'package:enough_mail/mime_message.dart';
 import 'package:html/parser.dart';
@@ -10,37 +11,39 @@ import 'package:html/parser.dart';
 import 'nm.dart';
 
 class Message extends Base {
-  late MemoryPointer<notmuch_message_t> _msg_p;
+  late MemoryPointer<notmuch_message_t> messagePointer;
 
+  // ignore: prefer_typing_uninitialized_variables
   var _parent;
 
-  var _db;
+  late Database database;
 
-  Message(parent, Pointer<notmuch_message_t> msg_p, db) {
+  Message(parent, Pointer<notmuch_message_t> msgp, db) {
     _parent = parent;
-    _msg_p = MemoryPointer(msg_p);
-    _db = db;
+    messagePointer = MemoryPointer(msgp);
+    database = db;
   }
 
   String get messageId {
-    final ret = LibNotmuch.notmuch_message_get_message_id(_msg_p.ptr);
+    final ret = LibNotmuch.notmuch_message_get_message_id(messagePointer.ptr);
     return BinString.fromCffi(ret);
   }
 
   String get threadId {
-    final ret = LibNotmuch.notmuch_message_get_thread_id(_msg_p.ptr);
+    final ret = LibNotmuch.notmuch_message_get_thread_id(messagePointer.ptr);
 
     return BinString.fromCffi(ret);
   }
 
   String get filename {
-    final ret = LibNotmuch.notmuch_message_get_filename(_msg_p.ptr);
+    final ret = LibNotmuch.notmuch_message_get_filename(messagePointer.ptr);
 
     return BinString.fromCffi(ret);
   }
 
   TagSet get tags {
-    return TagSet(this, () => _msg_p.ptr, LibNotmuch.notmuch_message_get_tags);
+    return TagSet(
+        this, () => messagePointer.ptr, LibNotmuch.notmuch_message_get_tags);
   }
 
   MimeMessage get parsedMessage {
@@ -83,7 +86,7 @@ class Message extends Base {
     }
 
     try {
-      _msg_p.ptr;
+      messagePointer.ptr;
     } on ObjectDestroyedError {
       return false;
     }
@@ -93,36 +96,37 @@ class Message extends Base {
   @override
   void destroy() {
     if (alive) {
-      LibNotmuch.notmuch_message_destroy(_msg_p.ptr);
-      _msg_p.ptr = null;
+      LibNotmuch.notmuch_message_destroy(messagePointer.ptr);
+      messagePointer.ptr = null;
     }
   }
 }
 
 class MessageIterator implements Iterator<Message> {
-  var _parent;
+  // ignore: prefer_typing_uninitialized_variables
+  var parent;
   late Message _current;
 
-  var _db;
+  late Database database;
 
-  late MemoryPointer<notmuch_messages_t> _messages_p;
+  late MemoryPointer<notmuch_messages_t> messagesPointer;
 
-  MessageIterator(parent, Pointer<notmuch_messages_t> messages_p, db) {
-    _parent = parent;
-    _messages_p = MemoryPointer(messages_p);
-    _db = db;
+  MessageIterator(owner, Pointer<notmuch_messages_t> messagesp, db) {
+    parent = owner;
+    messagesPointer = MemoryPointer(messagesp);
+    database = db;
   }
 
   @override
   Message get current => _current;
 
   bool get alive {
-    if (!_parent.alive) {
+    if (!parent.alive) {
       return false;
     }
 
     try {
-      _messages_p.ptr;
+      messagesPointer.ptr;
     } on ObjectDestroyedError {
       return false;
     }
@@ -133,12 +137,12 @@ class MessageIterator implements Iterator<Message> {
   void destroy() {
     if (alive) {
       try {
-        LibNotmuch.notmuch_messages_destroy(_messages_p.ptr);
+        LibNotmuch.notmuch_messages_destroy(messagesPointer.ptr);
       } on ObjectDestroyedError {
         // do nothing
       }
 
-      _messages_p.ptr = null;
+      messagesPointer.ptr = null;
     }
   }
 
@@ -153,22 +157,18 @@ class MessageIterator implements Iterator<Message> {
 
   @override
   bool moveNext() {
-    var status = LibNotmuch.notmuch_messages_valid(_messages_p.ptr);
-
-    print("Message iterator status: $status");
+    var status = LibNotmuch.notmuch_messages_valid(messagesPointer.ptr);
 
     if (status != TRUE) {
       destroy();
       return false;
     }
 
-    Pointer<notmuch_message_t> obj_p =
-        LibNotmuch.notmuch_messages_get(_messages_p.ptr);
+    Pointer<notmuch_message_t> objP =
+        LibNotmuch.notmuch_messages_get(messagesPointer.ptr);
 
-    print("Is message null? ${obj_p == nullptr}");
-
-    LibNotmuch.notmuch_messages_move_to_next(_messages_p.ptr);
-    _current = Message(this, obj_p, _db);
+    LibNotmuch.notmuch_messages_move_to_next(messagesPointer.ptr);
+    _current = Message(this, objP, database);
 
     return true;
   }

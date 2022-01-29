@@ -1,4 +1,3 @@
-import 'package:ffi/ffi.dart';
 import './bindings.dart';
 import 'dart:ffi';
 
@@ -9,4 +8,5 @@ NativeLibrary libNotMuch() {
   return NativeLibrary(dl);
 }
 
+// ignore: non_constant_identifier_names
 final LibNotmuch = libNotMuch();
