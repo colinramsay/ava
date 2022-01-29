@@ -1,13 +1,8 @@
 import 'dart:io';
 
-import 'package:ava/notmuch/nm.dart';
 import 'package:ava/notmuch/database.dart';
 import 'package:ava/thread_view.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 
 import '../notmuch/thread.dart';
 import 'bar.dart' as searchbar;
@@ -19,7 +14,7 @@ class Container extends StatefulWidget {
   _ContainerState createState() => _ContainerState();
 }
 
-List<Thread> getThreads(searchTerm) {
+Future<List<Thread>> getThreads(searchTerm) async {
   List<Thread> threads = [];
   DB.flush();
   var itr = DB.threads(searchTerm);
@@ -33,7 +28,6 @@ List<Thread> getThreads(searchTerm) {
 
 class _ContainerState extends State<Container> {
   late String _searchTerm = "tag:inbox";
-  late bool _listenList = false;
   late Future<List<Thread>> _threads;
 
   _ContainerState() {
@@ -50,7 +44,7 @@ class _ContainerState extends State<Container> {
 
   void _refresh() {
     if (_searchTerm.isNotEmpty) {
-      var threads = compute(getThreads, _searchTerm);
+      var threads = getThreads(_searchTerm);
       setState(() {
         _threads = threads;
       });
@@ -59,29 +53,26 @@ class _ContainerState extends State<Container> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: searchbar.Bar(
-          term: _searchTerm,
-          onSearch: (val) {
-            setState(() {
-              _searchTerm = val;
-            });
+    return Focus(
+      debugLabel: "SearchContainer",
+      canRequestFocus: false,
+      child: Scaffold(
+        appBar: searchbar.Bar(
+            term: _searchTerm,
+            onSearch: (val) {
+              setState(() {
+                _searchTerm = val;
+              });
 
-            _refresh();
-          }),
-      body: Focus(
-          onFocusChange: (f) {
-            setState(() {
-              _listenList = f;
-            });
-          },
-          child: searchlist.List(
-            listen: _listenList,
-            view: _view,
-            refresh: _refresh,
-            threads: _threads,
-            onRowPressed: (Thread thread) => {_view(thread)},
-          )),
+              _refresh();
+            }),
+        body: searchlist.List(
+          view: _view,
+          refresh: _refresh,
+          threads: _threads,
+          onRowPressed: (Thread thread) => {_view(thread)},
+        ),
+      ),
     );
   }
 

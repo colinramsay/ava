@@ -27,7 +27,6 @@ class List extends StatefulWidget {
 
   final Function(Thread thread) view;
   final Function() refresh;
-  final core.bool listen;
 
   final Function(Thread thread) onRowPressed;
 
@@ -36,8 +35,7 @@ class List extends StatefulWidget {
       required this.threads,
       required this.onRowPressed,
       required this.view,
-      required this.refresh,
-      required this.listen})
+      required this.refresh})
       : super(key: key);
 
   @core.override
@@ -47,23 +45,40 @@ class List extends StatefulWidget {
 class _ListState extends State<List> {
   late core.int _selectedIndex = 0;
 
+  core.bool focused = false;
+  FocusNode focusNode = FocusNode();
+
   Widget _buildShortcuts(core.List<Thread> threads) {
-    var innerChild = threads.isNotEmpty
-        ? Container(
-            decoration: BoxDecoration(
-                border: widget.listen
-                    ? Border.all(width: 10, color: const Color(0xffff0000))
-                    : null),
+    var content = GestureDetector(
+      onTap: () {
+        focusNode.requestFocus();
+      },
+      child: Focus(
+          focusNode: focusNode,
+          debugLabel: "SearchList",
+          autofocus: true,
+          canRequestFocus: true,
+          descendantsAreFocusable: false,
+          onFocusChange: (core.bool focused) {
+            setState(() {
+              this.focused = focused;
+            });
+          },
+          child: Container(
             child: ListView.builder(
                 padding: const EdgeInsets.all(16.0),
                 itemCount: threads.length,
                 itemBuilder: /*1*/ (context, i) => searchrow.Row(
+                      selected: _selectedIndex == i,
                       onPressed: () => widget.onRowPressed(threads[i]),
-                      selected: i == _selectedIndex,
                       thread: threads[i],
                     )),
-          )
-        : const Center(child: Text("No mail!"));
+          )),
+    );
+
+    var innerChild =
+        threads.isNotEmpty ? content : const Center(child: Text("No mail!"));
+
     return Shortcuts(
         shortcuts: <ShortcutActivator, Intent>{
           LogicalKeySet(LogicalKeyboardKey.arrowDown): const IncrementIntent(),

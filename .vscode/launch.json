@@ -5,13 +5,14 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "ava",
-            "request": "attach",
-            "type": "dart"
+            "name": "Ava",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "debug"
         },
         {
             "name": "ava (profile mode)",
-            "request": "attach",
+            "request": "launch",
             "type": "dart",
             "flutterMode": "profile"
         }

@@ -1,6 +1,6 @@
 import 'package:ava/notmuch/thread.dart';
 import 'package:flutter/material.dart' as material;
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 
 class Row extends StatelessWidget {
   final bool selected;
@@ -14,8 +14,10 @@ class Row extends StatelessWidget {
       required this.onPressed})
       : super(key: key);
 
-  _biggerFont({bool unread = false}) => TextStyle(
-      fontSize: 16.0, fontWeight: unread ? FontWeight.bold : FontWeight.normal);
+  _biggerFont({bool unread = false, bool selected = false}) => TextStyle(
+      color: selected ? Colors.black : Colors.black,
+      fontSize: 16.0,
+      fontWeight: unread ? FontWeight.bold : FontWeight.normal);
 
   @override
   Widget build(BuildContext context) {
@@ -26,11 +28,12 @@ class Row extends StatelessWidget {
         child: Container(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
             decoration: BoxDecoration(
-                border: Border.all(),
                 color: selected
-                    ? const Color(0xFFededed)
-                    : const Color(0xffFFFFFF)),
-            //color: selected ? const Color(0xFFededed) : const Color(0xffFFFFFF),
+                    ? Theme.of(context).focusColor
+                    : Colors.grey.shade100,
+                border: Border.symmetric(
+                    horizontal: BorderSide(
+                        width: 1, color: Theme.of(context).dividerColor))),
             child: material.Row(
               children: [
                 SizedBox(
@@ -38,13 +41,13 @@ class Row extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.only(right: 20.0),
                     child: Text(thread.authors,
-                        style: _biggerFont(unread: unread)),
+                        style: _biggerFont(selected: selected, unread: unread)),
                   ),
                 ),
                 Expanded(
                   //padding: const EdgeInsets.all(4.0),
-                  child:
-                      Text(thread.subject, style: _biggerFont(unread: unread)),
+                  child: Text(thread.subject,
+                      style: _biggerFont(selected: selected, unread: unread)),
                 )
               ],
             )));

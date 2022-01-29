@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 
 class Bar extends StatefulWidget implements PreferredSizeWidget {
   final String term;
@@ -21,6 +20,7 @@ class Bar extends StatefulWidget implements PreferredSizeWidget {
 }
 
 class _BarState extends State<Bar> {
+  FocusNode focusNode = FocusNode();
   late TextEditingController controller;
   late bool focused = false;
 
@@ -38,29 +38,30 @@ class _BarState extends State<Bar> {
 
   @override
   Widget build(BuildContext context) {
-    return Focus(
-        onFocusChange: (bool focused) {
-          setState(() {
-            this.focused = focused;
-          });
+    return GestureDetector(
+        onTap: () {
+          focusNode.requestFocus();
         },
         child: AppBar(
             backgroundColor: Theme.of(context).colorScheme.primaryVariant,
             title: TextField(
+              focusNode: focusNode,
               textAlignVertical: TextAlignVertical.center,
               controller: controller,
-              style: TextStyle(color: Colors.white),
+              style: const TextStyle(color: Colors.white),
               onSubmitted: (String _) => {widget.onSearch(controller.text)},
               decoration: InputDecoration(
                 suffixIcon: IconButton(
                   onPressed: controller.clear,
-                  icon: Icon(Icons.clear),
+                  icon: const Icon(Icons.clear),
+                  color: Colors.white,
                 ),
                 isDense: true,
                 fillColor: Colors.red,
                 contentPadding:
-                    EdgeInsets.symmetric(horizontal: 2, vertical: 10),
-                border: OutlineInputBorder(),
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                enabledBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white, width: 1)),
                 hintText: "Search",
               ),
             ),

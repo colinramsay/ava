@@ -67,7 +67,9 @@ class ThreadView extends StatelessWidget {
                               padding: const EdgeInsets.all(20),
                               child: Text(
                                 msg.asText,
-                                style: const TextStyle(fontSize: 16),
+                                style: const TextStyle(
+                                    fontFamily: 'JetBrainsMono Nerd Font',
+                                    fontSize: 16),
                               ));
                         }),
                   ),

@@ -19,7 +19,8 @@ class Database extends Base {
   }
 
   void open([mode = notmuch_database_mode_t.NOTMUCH_DATABASE_MODE_READ_ONLY]) {
-    final dbPath = '/mnt/data/mail/.notmuch'.toNativeUtf8();
+    final dbPath =
+        '/run/media/colinramsay/biglindata/mail/.notmuch'.toNativeUtf8();
     final configPath =
         '/home/colinramsay/.config/notmuch/default/config'.toNativeUtf8();
     final profile = 'default'.toNativeUtf8();
