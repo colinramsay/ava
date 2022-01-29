@@ -1,13 +1,15 @@
 import 'package:ava/notmuch/thread.dart';
 import 'package:flutter/material.dart' as material;
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class Row extends StatelessWidget {
   final bool selected;
   final Thread thread;
   final Function() onPressed;
+  final DateFormat formatter = DateFormat('MMM dd');
 
-  const Row(
+  Row(
       {Key? key,
       required this.selected,
       required this.thread,
@@ -48,6 +50,15 @@ class Row extends StatelessWidget {
                   //padding: const EdgeInsets.all(4.0),
                   child: Text(thread.subject,
                       style: _biggerFont(selected: selected, unread: unread)),
+                ),
+                SizedBox(
+                  width: 100,
+                  child: Container(
+                    padding: const EdgeInsets.only(right: 20.0),
+                    child: Text(formatter.format(thread.newestDate),
+                        textAlign: material.TextAlign.right,
+                        style: _biggerFont(selected: selected, unread: unread)),
+                  ),
                 )
               ],
             )));

@@ -60,6 +60,14 @@ class Thread extends Base {
     return BinString.fromCffi(ret);
   }
 
+  DateTime get newestDate {
+    var ret = LibNotmuch.notmuch_thread_get_newest_date(_thread_p.ptr);
+
+    // https://en.cppreference.com/w/c/chrono/time_t
+    // time_t should be seconds so convert to milliseconds
+    return DateTime.fromMillisecondsSinceEpoch(ret * 1000);
+  }
+
   String get subject {
     var ret = LibNotmuch.notmuch_thread_get_subject(_thread_p.ptr);
     return BinString.fromCffi(ret);
