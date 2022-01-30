@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:ava/composer.dart';
 import 'package:ava/thread_view.dart';
 import 'package:flutter/material.dart';
 
@@ -66,11 +67,17 @@ class _ContainerState extends State<Container> {
 
               _refresh();
             }),
-        body: searchlist.List(
-          view: _view,
-          refresh: _refresh,
-          threads: _threads,
-          onRowPressed: (Thread thread) => {_view(thread)},
+        body: Column(
+          children: [
+            Expanded(
+                child: searchlist.List(
+              view: _view,
+              refresh: _refresh,
+              threads: _threads,
+              onRowPressed: (Thread thread) => {_view(thread)},
+            )),
+            const Composer()
+          ],
         ),
       ),
     );

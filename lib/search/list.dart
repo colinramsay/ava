@@ -64,6 +64,7 @@ class _ListState extends State<List> {
             });
           },
           child: ListView.builder(
+              shrinkWrap: true, // and set this
               padding: const EdgeInsets.all(16.0),
               itemCount: threads.length,
               itemBuilder: /*1*/ (context, i) => searchrow.Row(
