@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:ava/notmuch/thread.dart';
 import 'package:flutter/material.dart' as material;
 import 'package:flutter/material.dart';
@@ -55,9 +57,16 @@ class Row extends StatelessWidget {
                   width: 100,
                   child: Container(
                     padding: const EdgeInsets.only(right: 20.0),
-                    child: Text(formatter.format(thread.newestDate),
-                        textAlign: material.TextAlign.right,
-                        style: _biggerFont(selected: selected, unread: unread)),
+                    child: TextButton(
+                        onPressed: () {
+                          thread.openNewestAttachment();
+                        },
+                        child: Text(
+                            formatter.format(thread.newestDate) +
+                                " ${thread.newestAttachmentFilename}",
+                            textAlign: material.TextAlign.right,
+                            style: _biggerFont(
+                                selected: selected, unread: unread))),
                   ),
                 )
               ],

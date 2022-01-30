@@ -1,4 +1,5 @@
 import 'dart:ffi';
+import 'dart:io';
 import 'package:ava/notmuch/base.dart';
 import 'package:ava/notmuch/database.dart';
 import 'package:ava/notmuch/tags.dart';
@@ -49,6 +50,44 @@ class Thread extends Base {
   MessageIterator get messages {
     var msgsP = LibNotmuch.notmuch_thread_get_messages(threadPointer.ptr);
     return MessageIterator(this, msgsP, _db);
+  }
+
+  String? get newestAttachmentFilename {
+    var itr = messages;
+    while (itr.moveNext()) {
+      var ci = itr.current.parsedMessage.findContentInfo();
+      // var file = itr.current.parsedMessage.getPart(ci.first.fetchId);
+      // return [file!.decodeFileName()!];
+
+      return ci.map((e) => e.fileName).join(", ");
+    }
+    return null;
+  }
+
+  Future<String?> openNewestAttachment() async {
+    var itr = messages;
+    while (itr.moveNext()) {
+      var ci = itr.current.parsedMessage.findContentInfo();
+      var part = itr.current.parsedMessage.getPart(ci.first.fetchId);
+      var f = File("/tmp/${part!.decodeFileName()}");
+      await f.writeAsBytes(List.from(part.decodeContentBinary()!));
+
+      Process.run("xdg-open", [f.path]);
+      return ci.first.fileName;
+    }
+    return null;
+  }
+
+  bool get hasAttachments {
+    var itr = messages;
+    while (itr.moveNext()) {
+      var ci = itr.current.parsedMessage.findContentInfo();
+
+      if (ci.isNotEmpty) {
+        return true;
+      }
+    }
+    return false;
   }
 
   String get threadId {
