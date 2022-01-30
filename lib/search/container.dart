@@ -1,9 +1,9 @@
 import 'dart:io';
 
-import 'package:ava/notmuch/database.dart';
 import 'package:ava/thread_view.dart';
 import 'package:flutter/material.dart';
 
+import '../main.dart';
 import '../notmuch/thread.dart';
 import 'bar.dart' as searchbar;
 import 'list.dart' as searchlist;

@@ -5,6 +5,7 @@ import 'package:ava/notmuch/message.dart';
 import 'package:ava/notmuch/query.dart';
 import 'package:ava/notmuch/thread.dart';
 import 'package:ffi/ffi.dart';
+import '../config.dart';
 import './bindings.dart';
 import 'nm.dart';
 import 'dart:ffi' as ffi;
@@ -19,10 +20,11 @@ class Database extends Base {
 
   void open([mode = notmuch_database_mode_t.NOTMUCH_DATABASE_MODE_READ_ONLY]) {
     final dbPath =
-        '/run/media/colinramsay/biglindata/mail/.notmuch'.toNativeUtf8();
+        Config().getDeepValue<String>('notmuch.databasePath')!.toNativeUtf8();
     final configPath =
-        '/home/colinramsay/.config/notmuch/default/config'.toNativeUtf8();
-    final profile = 'default'.toNativeUtf8();
+        Config().getDeepValue<String>('notmuch.configPath')!.toNativeUtf8();
+    final profile =
+        Config().getDeepValue<String>('notmuch.profile')!.toNativeUtf8();
 
     Pointer<Pointer<notmuch_database_t>> dbpp = calloc();
     Pointer<Pointer<Int8>> cmsg = calloc();
@@ -120,6 +122,3 @@ class Database extends Base {
     open(notmuch_database_mode_t.NOTMUCH_DATABASE_MODE_READ_WRITE);
   }
 }
-
-// ignore: non_constant_identifier_names
-Database DB = Database();

@@ -4,6 +4,9 @@ import 'package:ava/search/container.dart' as search;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import 'config.dart';
+import 'notmuch/database.dart';
+
 Future<ServerSocket> socklock() async {
   return await ServerSocket.bind(InternetAddress.loopbackIPv4, 5599);
 }
@@ -39,7 +42,12 @@ void startServer() {
   });
 }
 
+// ignore: non_constant_identifier_names
+late Database DB;
+
 void main() async {
+  await Config().loadFromPath('./config.json');
+  DB = Database();
   startServer();
   runApp(const Ava());
 }

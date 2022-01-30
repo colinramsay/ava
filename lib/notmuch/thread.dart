@@ -4,6 +4,7 @@ import 'package:ava/notmuch/database.dart';
 import 'package:ava/notmuch/tags.dart';
 import 'package:flutter/foundation.dart';
 
+import '../main.dart';
 import './bindings.dart';
 
 import 'message.dart';
